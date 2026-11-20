@@ -2,8 +2,16 @@ name: Publish v1.0.0
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/release.yml'
     tags:
       - 'v1.0.0'
+
+concurrency:
+  group: publish-v1.0.0
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -15,6 +23,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: v1.0.0
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
@@ -27,5 +38,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create v1.0.0 Dao-Den-Long-v1.0.0.zip docs/demo/demo.mp4 \
-            --verify-tag --title "Đảo Đèn Lồng v1.0.0" --notes-file docs/release-v1.0.0.md
+          if ! gh release view v1.0.0 >/dev/null 2>&1; then
+            gh release create v1.0.0 Dao-Den-Long-v1.0.0.zip docs/demo/demo.mp4 \
+              --verify-tag --title "Đảo Đèn Lồng v1.0.0" --notes-file docs/release-v1.0.0.md
+          fi

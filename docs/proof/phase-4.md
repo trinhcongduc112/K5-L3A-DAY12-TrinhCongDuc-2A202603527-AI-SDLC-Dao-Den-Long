@@ -27,13 +27,13 @@ Benchmark mở Chrome ở cửa sổ 1280×720, vòng camera 15 giây. Đêm 1 c
 npm run soak -- --seed 7 --nights 10 --out soak.json
 ```
 
-Cùng một tiến trình chạy đủ 10 đêm theo seed 7–16, **0 crash**, RSS **47,777 → 56,168 MiB**, tăng khoảng **17,56%**. Các ván ngẫu nhiên kết thúc `lost` theo luật. Lần đo mất **0,947 giây**. [JSON soak](../../soak.json)
+Cùng một tiến trình chạy đủ 10 đêm theo seed 7–16, **0 crash**, RSS **43,637 → 48,273 MiB**, tăng khoảng **10,62%**. Các ván ngẫu nhiên kết thúc `lost` theo luật. Lần đo mất **4,726 giây**. Chạy lại bốn lần với cùng cấu hình cho mức tăng khoảng 9,5–10,1%. [JSON soak](../../soak.json)
 
 ## Hồi quy, UI và bản bàn giao
 
 - `npm test` đạt **38/38**. Bốn ca bổ sung xác minh phép tính FPS, phím trùng và lưu tùy chọn, top 10 và thứ tự hòa điểm, ghi đồng thời và xuất bảng điểm từ đĩa. Kịch bản bình minh cũ vẫn trả 524 điểm khi chạy qua contract v1.3.
 - Chrome kiểm tra 18 px và 22,5 px, phím trùng bị chặn và phím mới được lưu rồi khôi phục, giảm chuyển động, châm dầu, các cảnh báo, chuyển đêm, lưu bảng điểm ở cả màn Bình Minh và màn thua. Dữ liệu thử được lưu vào thư mục riêng. Có 0 ngoại lệ JavaScript. [Kết quả Chrome](phase-4-browser.json) · [Ảnh đang chạy](phase-4-game.jpg)
-- Demo MP4 dài khoảng 62 giây, 1280×720, ghi hình từ gameplay với đầu vào tự động ở seed 1200, gồm nhặt đom đóm, thắp L1, mất Ngọn Lửa, lưu tên vào bảng điểm và các số kiểm thử. [Video MP4](../demo/demo.mp4)
+- Demo MP4 dài khoảng 61 giây, 1280×720, ghi hình từ gameplay với đầu vào tự động ở seed 1200, gồm nhặt đom đóm, thắp L1, mất Ngọn Lửa, lưu tên vào bảng điểm và các số kiểm thử. [Video MP4](../demo/demo.mp4)
 - Bản ZIP chứa thư mục `dist` cùng trình phục vụ cục bộ nhỏ chạy bằng Node.js, gồm cả lệnh xuất điểm. [Hướng dẫn phát hành](../release-v1.0.0.md)
 
 Bản nguồn sạch đã cài, build và chạy bằng đúng ba lệnh trong README. Bản ZIP đã giải nén, khởi động bằng launcher và trả được HTML, JavaScript và bảng điểm. Kết quả xuất JSON từ lệnh CLI khớp dữ liệu mà launcher đọc.

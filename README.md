@@ -53,7 +53,7 @@ npm run soak -- --seed 7 --nights 10 --out soak.json
 
 Benchmark dùng bản đã build cùng Chrome hoặc Chromium. Đặt `CHROME_BIN` nếu trình duyệt nằm ngoài các vị trí thông dụng. Lệnh mở cửa sổ 1280×720 và yêu cầu Chromium tắt vsync cùng giới hạn khung hình. FPS là tốc độ khung hình do bộ đo ghi trong renderer. `peak_mem_mb` là `null` vì RSS của một trang web không tách tin cậy khỏi các tiến trình trình duyệt/GPU. Trên Linux không có màn hình, lệnh dùng Chrome headless. Có thể đặt `DAO_BENCH_HEADLESS=1` để chạy headless chủ động.
 
-Soak lấy RSS sau lần dựng đêm đầu và sau khi kết thúc/reset đêm cuối, sau GC ở cả hai mốc. Nó chạy các seed từ seed đầu, cộng một cho mỗi đêm tiếp theo, và giữ một tiến trình. Cảnh benchmark dùng chung renderer, với trang trí sáng tạo tắt.
+Soak lấy RSS sau lần dựng đêm đầu và sau khi kết thúc/reset đêm cuối, sau GC ở cả hai mốc. Tiến trình soak tắt JIT để giảm dao động RSS khi đo lặp. Nó chạy các seed từ seed đầu, cộng một cho mỗi đêm tiếp theo, và giữ một tiến trình. Cảnh benchmark dùng chung renderer, với trang trí sáng tạo tắt.
 
 [Test Contract v1.3](game.contract.json) · [Bằng chứng Phase 4](docs/proof/phase-4.md) · [Changelog](CHANGELOG.md) · [Retro](docs/retro.md)
 

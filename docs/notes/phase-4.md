@@ -11,7 +11,7 @@
 ## Quyết định và giới hạn đo
 
 - Bảng xếp hạng dùng chung dữ liệu đĩa giữa bản chạy Node và lệnh xuất. Gọi lại lưu một mục giống hệt sẽ không tạo hạng trùng. Khi dùng host chỉ phục vụ file, bảng điểm dự phòng lưu trong trình duyệt. Seed mục điểm là seed đầu chiến dịch, 1200 với bản chơi hiện tại.
-- Soak dùng seed đầu ở lượt chỉ số 0, cộng một ở mỗi lượt. Đo RSS sau GC ở hai mốc tương ứng. Kích thước vùng cấp phát trẻ của V8 dùng 1 MiB cho tiến trình soak để phù hợp tải nhỏ, lặp lâu. Tiến trình benchmark và game đồ họa chạy độc lập.
+- Soak dùng seed đầu ở lượt chỉ số 0, cộng một ở mỗi lượt. Đo RSS sau GC ở hai mốc tương ứng. Soak dùng V8 không JIT và vùng cấp phát trẻ 1 MiB. Chạy lặp khi bật JIT cho mức tăng RSS 17–22%, có lượt vượt ngưỡng do chi phí sinh mã theo thời gian chạy. Chế độ không JIT mất khoảng 5 giây với 10 đêm và cho mức tăng khoảng 10%. Tiến trình benchmark và game đồ họa chạy độc lập.
 - Chromium được yêu cầu tắt vsync và giới hạn khung hình. Bộ đo đếm các khung renderer, mô tả cấu hình đã dùng và để RSS là null đối với trang web.
 - Dùng lại mô hình và ánh sáng của game. Gom đom đóm và Bóng Mực bằng instancing cho bản thường lẫn benchmark. Đồ trang trí riêng được tắt khi benchmark, soak chỉ chạy mô phỏng.
 - Bản demo dùng đầu vào tự động gửi vào logic game từ seed mặc định, quay giao diện thực, sau đó hiện kết quả lệnh đã chạy. Các ca kiểm thử UI tăng tốc những mốc như bình minh bằng scenario trong bộ nhớ và được ghi riêng.
