@@ -1,6 +1,6 @@
 {
   "contract_version": "1.1",
-  "team": "mssv-ho-ten",
+  "team": "2A202603527-TrinhCongDuc",
   "build_cmd": "npm ci",
   "run_cmd": "npm run dev",
   "headless_cmd": "node src/headless.js",
