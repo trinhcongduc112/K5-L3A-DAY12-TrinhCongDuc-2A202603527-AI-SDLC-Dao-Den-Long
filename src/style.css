@@ -20,14 +20,17 @@ body { margin: 0; overflow: hidden; }
 .flames .spent { color: #666178; }
 .clock { top: 1rem; left: 50%; transform: translateX(-50%); font: 600 1.3rem ui-monospace, monospace; }
 .clock.urgent { color: #ff5a5f; animation: blink 1s steps(1) infinite; }
+.distinct-colors .clock.urgent, .distinct-colors .wind-notice { color: #ffffff; }
+.distinct-colors .clock.urgent::before, .distinct-colors .wind-notice::before { content: "⚠ "; }
 @keyframes blink { 50% { opacity: .55; } }
 .score { display: grid; gap: .25rem; top: 1rem; right: 1rem; text-align: right; }
 #points { color: #f2c14e; font-variant-numeric: tabular-nums; }
 .prompt, .motes { left: 50%; transform: translateX(-50%); white-space: nowrap; }
 .prompt { bottom: 4.5rem; }
-.motes { bottom: 1.15rem; display: flex; gap: .29rem; }
+.motes { bottom: 1.15rem; display: flex; align-items: center; gap: .29rem; }
 .motes i { display: block; width: .68rem; height: .68rem; border: 1px solid #f2c14e60; border-radius: 50%; }
 .motes i.on { background: #fff6c2; box-shadow: 0 0 10px #ffe58a; }
+#capacity { margin-inline-start: .35rem; font-variant-numeric: tabular-nums; }
 .actions { bottom: 1rem; right: 1rem; line-height: 1.6; }
 .waypoint { position: absolute; color: #ffe9b0; text-shadow: 0 1px 12px #151028; font-size: 1.5rem; }
 .wind-notice { left: 50%; top: 5.1rem; transform: translateX(-50%); }
@@ -58,10 +61,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid #fff6c2; outline-
 kbd { padding: .06rem .25rem; border: 1px solid #ffe9b052; border-radius: 3px; color: #ffe9b0; font: inherit; }
 .settings { display: grid; text-align: left; gap: 1rem; width: min(100%, 300px); }
 .settings label { display: grid; gap: .35rem; }
+.settings .checkbox-setting { grid-template-columns: auto 1fr; align-items: center; gap: .6rem; }
 .settings input { accent-color: #f2c14e; }
 @media (max-width: 520px) {
   .hud { font-size: .75rem; }
   .actions { bottom: 3.7rem; right: .5rem; }
   .glass { padding: .5rem .6rem; }
-  .motes { gap: .2rem; }
+  .motes { gap: .16rem; }
+  .motes i { width: .5rem; height: .5rem; }
 }

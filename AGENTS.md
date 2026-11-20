@@ -12,3 +12,8 @@
 - Tuning chuẩn nằm trong `game.contract.json`, bản đồ trong `src/world.js`. `Game.step` giữ nguyên thứ tự xử lý của Ticket-02.
 - Kiểm tra pause qua cả `tick` và `sim_tick`. Khi đổi xử lý va chạm, chạy lại scenario bục, vực, tầng Đêm 3, vùng sáng và Gió Lạc.
 - Dùng `docs/proof/phase-2.md` để chạy bài đo dài và kiểm tra Chrome. Chỉ ghi số liệu đo được cùng cấu hình.
+
+## Từ Phase 3
+
+- Lưu dầu theo đơn vị nguyên 1/60 và chỉ làm tròn tại đầu ra. Bước trừ dầu và tắt đèn chạy trước tương tác. Giữ phép kiểm tra bình minh ở cuối tick.
+- Khi thay đổi đèn, chạy scenario ở `docs/proof/phase-3.md`. So lại ngưỡng 30, điểm bình minh, thứ tự thắng/thua và màu cảnh báo sau khi reload.

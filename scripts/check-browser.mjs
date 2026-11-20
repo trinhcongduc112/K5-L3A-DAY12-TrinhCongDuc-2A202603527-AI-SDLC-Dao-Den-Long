@@ -60,6 +60,7 @@ try {
   await click('Bắt đầu');
   await click('Vào đảo');
   await until("document.querySelector('#overlay').hidden && document.querySelector('#lantern-count').textContent === 'Đèn 0/5'");
+  assert.equal(await evaluate("document.querySelector('#capacity').textContent"), '0/10');
   await press('KeyW', 450);
   await press('Space', 90);
   if (process.env.GAME_CHECK_SCREENSHOT) await screenshot(process.env.GAME_CHECK_SCREENSHOT);
@@ -91,6 +92,9 @@ try {
       const slider = document.querySelector('input[type=range]');
       slider.value = '0.42';
       slider.dispatchEvent(new Event('input', { bubbles: true }));
+      const palette = document.querySelector('input[type=checkbox]');
+      palette.checked = true;
+      palette.dispatchEvent(new Event('change', { bubbles: true }));
     })()`);
     await click('Quay lại');
     assert.equal(await evaluate("document.querySelector('#clock').textContent"), previousClock);
@@ -104,6 +108,7 @@ try {
     await until("Boolean(document.querySelector('#stage canvas'))");
     await click('Cài đặt');
     assert.equal(await evaluate("document.querySelector('input[type=range]').value"), '0.42');
+    assert.equal(await evaluate("document.querySelector('input[type=checkbox]').checked"), true);
   }
   await click('Quay lại');
   await click('Bắt đầu');
@@ -114,15 +119,37 @@ try {
     const url = performance.getEntriesByType('resource')
       .map(item => item.name).find(name => new URL(name).pathname === '/src/game.js');
     const { Game } = await import(url ?? '/src/game.js');
+    const { HZ } = await import(new URL('./world.js', url ?? location.href));
     const step = Game.prototype.step;
     Game.prototype.step = function (input) {
+      if (window.testFuelView) {
+        window.testFuelView = false;
+        Object.assign(this.lanterns[0], { pos: [-1.3, 0, 1.3], lit: true, fuelUnits: 25 * HZ, everLit: true });
+        this.lanterns[1].pos = [1.8, 0, 1.4];
+        this.player.carried = 5;
+        this.player.successfulLights = 1;
+        this.addShade({ pos: [0.75, 0.8, 5], state: 'stunned', state_ticks_left: 180 });
+        this.startTime = this.simTick / HZ + 25;
+      }
       if (window.testWinNight === this.night) {
         window.testWinNight = null;
-        this.lanterns.forEach(lantern => { lantern.lit = true; });
+        this.startTime = (this.simTick + 1) / HZ;
+        this.lanterns.forEach((lantern, index) => {
+          lantern.lit = index < this.dawnTarget;
+          lantern.fuelUnits = lantern.lit ? this.maxFuelUnits : 0;
+        });
       }
       return step.call(this, input);
     };
   })()`, true);
+  await evaluate('window.testFuelView = true');
+  await until("document.querySelector('#capacity').textContent === '5/12' && document.querySelector('#clock').classList.contains('urgent')");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#clock')).color"), 'rgb(255, 255, 255)');
+  assert.match(await evaluate("getComputedStyle(document.querySelector('#clock'), '::before').content"), /⚠/);
+  assert.match(await evaluate("document.querySelector('#prompt').textContent"), /Châm dầu/);
+  if (process.env.GAME_CHECK_FUEL_SCREENSHOT) await screenshot(process.env.GAME_CHECK_FUEL_SCREENSHOT);
+  await press('KeyE');
+  await until("document.querySelector('#capacity').textContent === '0/12'");
   await evaluate('window.testWinNight = 1');
   await click('Đêm kế tiếp');
   await until("document.querySelector('#screen-title').textContent === 'Đảo Cau'");
@@ -141,7 +168,7 @@ try {
   await until("document.querySelector('#screen-title').textContent === 'Bình Minh'");
   assert.match(await evaluate("document.querySelector('#screen-copy').textContent"), /Tổng điểm: [1-9]/);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ gpu, nights, errors: errors.length }));
+  console.log(JSON.stringify({ gpu, nights, settingsPersisted: true, refuelHud: true, errors: errors.length }));
 } finally {
   socket.close();
 }

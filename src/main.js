@@ -2,7 +2,7 @@ import './style.css';
 import contract from '../game.contract.json';
 import { createAudio } from './audio.js';
 import { blankInput, Game } from './game.js';
-import { DT, horizontalDistance } from './world.js';
+import { DT, HZ } from './world.js';
 import { createView } from './view.js';
 
 const $ = id => document.getElementById(id);
@@ -11,7 +11,7 @@ const overlay = $('overlay');
 const hud = $('hud');
 const clock = $('clock');
 const scenes = {
-  1: 'Ông Đăng: “Mang từng đốm sáng về đèn. Khi cả đảo rực lên, sương sẽ tan.”',
+  1: 'Ông Đăng: “Giữ đủ đèn sáng đến bình minh. Nhớ châm thêm dầu khi đèn yếu.”',
   2: 'Ông Đăng: “Bên kia cầu tre còn đèn tắt. Nếu gặp Gió Lạc, hãy giữ chặt những đốm sáng.”',
   3: 'Ông Đăng: “Theo con dốc lên tầng trên. Đèn ở chân tháp chuông sẽ gọi bình minh về.”',
 };
@@ -39,10 +39,11 @@ function readSettings() {
       return {
         volume: Math.min(1, Math.max(0, data.volume)),
         sensitivity: Math.min(2, Math.max(0.35, data.sensitivity)),
+        distinctColors: data.distinctColors === true,
       };
     }
   } catch {}
-  return { volume: 0.55, sensitivity: 1 };
+  return { volume: 0.55, sensitivity: 1, distinctColors: false };
 }
 
 function saveSettings() {
@@ -112,6 +113,18 @@ function settings() {
     label.append(input);
     panel.append(label);
   }
+  const paletteSetting = document.createElement('label');
+  paletteSetting.className = 'checkbox-setting';
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = saved.distinctColors;
+  checkbox.addEventListener('change', () => {
+    saved.distinctColors = checkbox.checked;
+    document.body.classList.toggle('distinct-colors', saved.distinctColors);
+    saveSettings();
+  });
+  paletteSetting.append(checkbox, 'Bảng màu dễ phân biệt');
+  panel.append(paletteSetting);
   screenButtons.prepend(panel);
 }
 
@@ -126,7 +139,7 @@ function show(mode) {
   kicker.textContent = mode === 'dawn' ? 'BA ĐÊM ĐÃ QUA' : 'ĐÊM ' + game.night + '  ✧  ' + game.world.title.toUpperCase();
   const won = game.state === 'won';
   const pages = {
-    menu: ['Đảo Đèn Lồng', 'Cùng Mây mang ánh sáng trở lại ba hòn đảo.', [
+    menu: ['Đảo Đèn Lồng', 'Cùng Mây giữ ánh sáng trên ba hòn đảo tới bình minh.', [
       command('Bắt đầu', () => beginNight(1)), command('Cài đặt', settings, true),
     ]],
     intro: [game.world.title, scenes[game.night], [
@@ -138,7 +151,7 @@ function show(mode) {
     ]],
     settings: ['Cài đặt', '', [command('Quay lại', () => show(settingsFrom))]],
     result: [
-      won ? 'Đảo đã sáng!' : 'Sương đã phủ kín đảo',
+      won ? 'Đảo sáng tới bình minh!' : game.player.flames <= 0 ? 'Mây đã hết Ngọn Lửa' : 'Đảo chưa đủ đèn sáng',
       'Điểm đêm này: ' + numberFormat.format(game.score) + ' · Tổng điểm: ' + numberFormat.format(total),
       [
         won ? command('Đêm kế tiếp', () => beginNight(game.night + 1)) : command('Chơi lại Đêm', () => beginNight(game.night)),
@@ -208,7 +221,13 @@ for (let index = 0; index < contract.tuning.flames; index++) {
   item.textContent = '♦';
   lamps.append(item);
 }
-for (let index = 0; index < contract.tuning.carry_capacity; index++) inventory.append(document.createElement('i'));
+const capacityLabel = $('capacity');
+const moteSlots = Array.from({ length: contract.tuning.capacity_max }, () => {
+  const slot = document.createElement('i');
+  slot.setAttribute('aria-hidden', 'true');
+  inventory.insertBefore(slot, capacityLabel);
+  return slot;
+});
 const dashStatus = $('dash-status');
 const pulseStatus = $('pulse-status');
 const windNotice = $('wind-notice');
@@ -216,14 +235,19 @@ const windNotice = $('wind-notice');
 function updateHud() {
   const { player } = game;
   for (const [index, item] of Array.from(lamps.children).entries()) item.classList.toggle('spent', index >= player.flames);
-  for (const [index, item] of Array.from(inventory.children).entries()) item.classList.toggle('on', index < player.carried);
+  for (const [index, item] of moteSlots.entries()) {
+    item.hidden = index >= game.capacity;
+    item.classList.toggle('on', index < player.carried);
+  }
+  capacityLabel.textContent = player.carried + '/' + game.capacity;
   const flameCount = player.flames + ' Ngọn Lửa';
   if (lamps.getAttribute('aria-label') !== flameCount) lamps.setAttribute('aria-label', flameCount);
   const seconds = Math.ceil(game.timeLeft);
   const format = value => String(value).padStart(2, '0');
   clock.textContent = format(Math.floor(seconds / 60)) + ':' + format(seconds % 60);
   clock.classList.toggle('urgent', seconds <= 30 && game.state === 'playing');
-  $('lantern-count').textContent = 'Đèn ' + game.lanterns.filter(item => item.lit).length + '/' + game.lanterns.length;
+  $('lantern-count').textContent = 'Đèn ' + game.litCount + '/' + game.lanterns.length;
+  $('dawn-target').textContent = 'Cần ' + game.dawnTarget + ' lúc bình minh';
   $('points').textContent = numberFormat.format(total + (game.state === 'won' ? 0 : game.score)) + ' điểm';
   const cooldown = end => end > game.simTick ? ((end - game.simTick) / 60).toFixed(1) + 's' : '✓';
   dashStatus.textContent = cooldown(player.dashCooldown);
@@ -231,7 +255,8 @@ function updateHud() {
 
   const lantern = game.nearbyLantern();
   $('prompt').hidden = !lantern || screen !== 'play';
-  if (lantern) $('prompt').textContent = 'E — Nạp ánh sáng (' + lantern.deposited + '/' + game.tuning.lantern_cost + ')';
+  if (lantern?.lit) $('prompt').textContent = 'E — Châm dầu (' + (lantern.fuelUnits / HZ).toFixed(1) + '/' + game.tuning.fuel_max + ')';
+  else if (lantern) $('prompt').textContent = 'E — Nạp ánh sáng (' + lantern.deposited + '/' + game.lanternCost(lantern) + ')';
   windNotice.hidden = !game.windEnabled || !(game.wind.active || game.simTick % 1800 >= 1680) || screen !== 'play';
   if (!windNotice.hidden) windNotice.textContent = game.wind.active ? 'Gió mạnh' : 'Gió mạnh sắp đến';
   showWaypoint(player);
@@ -239,8 +264,8 @@ function updateHud() {
 
 function showWaypoint(player) {
   const waypoint = $('waypoint');
-  const closest = game.lanterns.filter(item => !item.lit).sort((a, b) =>
-    horizontalDistance(player.pos, a.pos) - horizontalDistance(player.pos, b.pos))[0];
+  const closest = game.closestLantern(player.pos, item => !item.lit) ??
+    game.closestLantern(player.pos, item => game.isWeak(item));
   waypoint.hidden = true;
   if (!closest || screen !== 'play') return;
   const { x, y, behind } = view.project([closest.pos[0], closest.pos[1] + 3, closest.pos[2]]);
@@ -296,7 +321,7 @@ function frame(now) {
   } else {
     accumulator = 0;
   }
-  view.draw(game, yaw, pitch, now / 1000, screen === 'menu' || screen === 'intro');
+  view.draw(game, yaw, pitch, now / 1000, screen === 'menu' || screen === 'intro', saved.distinctColors);
   if (!hud.hidden) updateHud();
   requestAnimationFrame(frame);
 }
@@ -308,6 +333,7 @@ try {
   $('start').disabled = true;
 }
 if (view) {
+  document.body.classList.toggle('distinct-colors', saved.distinctColors);
   mainMenu();
   requestAnimationFrame(frame);
 }

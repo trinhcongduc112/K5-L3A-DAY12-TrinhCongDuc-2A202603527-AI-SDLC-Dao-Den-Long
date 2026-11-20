@@ -65,6 +65,8 @@ function records(list, name, validate) {
 function validateScenario(data, night) {
   const isBoolean = value => typeof value === 'boolean';
   const pos = value => vector(value, 3);
+  const count = worlds[night].lanterns.length;
+  const lanternId = value => id(value) && worlds[night].lanterns.some((_, i) => value === 'L' + (i + 1));
   validateFields(data, {
     time_left_s: value => number(value) && value >= 0,
     random_motes: isBoolean,
@@ -76,9 +78,12 @@ function validateScenario(data, night) {
   if ('player' in data) validateFields(data.player, {
     pos, carried: value => integer(value), flames: value => integer(value),
     invuln_ticks: integer, dash_cd_ticks: integer, pulse_cd_ticks: integer, charm_ticks: integer,
+    successful_lights: integer,
   }, 'player');
   records(data.shades, 'shades', (item, label) => {
-    validateFields(item, { pos, id, state: value => shadeStates.includes(value), state_ticks_left: integer }, label);
+    validateFields(item, {
+      pos, id, state: value => shadeStates.includes(value), state_ticks_left: integer, target_lantern_id: lanternId,
+    }, label);
     requireValue(pos(item.pos), label + '.pos is required');
   });
   records(data.drifters, 'drifters', (item, label) => {
@@ -89,10 +94,11 @@ function validateScenario(data, night) {
     validateFields(item, { pos, id, available: isBoolean, respawn_ticks: integer, respawn_ticks_left: integer }, label);
   });
   records(data.lanterns, 'lanterns', (item, label) => {
-    validateFields(item, { pos, lit: isBoolean, deposited: value => integer(value) }, label);
-    const count = worlds[night].lanterns.length;
-    requireValue(id(item.id) && worlds[night].lanterns.some((_, i) => item.id === 'L' + (i + 1)),
-      label + '.id must be L1 through L' + count);
+    validateFields(item, {
+      pos, lit: isBoolean, deposited: integer, ever_lit: isBoolean,
+      fuel: value => number(value) && value >= 0 && value <= contract.tuning.fuel_max,
+    }, label);
+    requireValue(lanternId(item.id), label + '.id must be L1 through L' + count);
   });
 }
 

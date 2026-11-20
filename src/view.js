@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { groundHeight, seededRandom } from './world.js';
+import { groundHeight, HZ, seededRandom } from './world.js';
 
 const palette = {
   sky: 0x0e1430, fog: 0x1b2350, grass: 0x2f5d50, sand: 0xc9b48a,
   wood: 0x6b4a2f, clouds: 0x12384a, active: 0xffb347, core: 0xffe9b0,
   inactive: 0x5b5f6e, mote: 0xfff6c2, halo: 0xffe58a,
-  dark: 0x120a1a, violet: 0x7a3cff, stunned: 0x3a3450,
+  dark: 0x120a1a, violet: 0x7a3cff, accentBlue: 0x00b3ff, stunned: 0x3a3450,
   coat: 0xe8e2d0, scarf: 0xc8102e, gold: 0xf2c14e, drifter: 0x8fa3b8,
 };
 const cylinder = (top, bottom, height, segments = 12) => new THREE.CylinderGeometry(top, bottom, height, segments);
@@ -46,9 +46,38 @@ function createLantern() {
   mesh(group, cylinder(0.28, 0.45, 0.2), lambert(0x484257), 0, 0.1);
   mesh(group, cylinder(0.12, 0.2, 2.05, 8), lambert(palette.wood), 0, 1.02);
   mesh(group, cylinder(0.19, 0.27, 0.14, 6), lambert(palette.wood), 0, 2.08);
-  mesh(group, cylinder(0.26, 0.3, 0.66, 6), basic(palette.inactive), 0, 2.45).name = 'lamp';
-  mesh(group, cylinder(0.12, 0.17, 0.19, 6), basic(palette.core), 0, 2.45, 0.25).name = 'core';
-  mesh(group, cylinder(0.075, 0.38, 0.24, 6), lambert(palette.wood), 0, 2.91);
+  const paper = new THREE.Group();
+  paper.name = 'paper';
+  paper.position.y = 2.12;
+  group.add(paper);
+  mesh(paper, cylinder(0.26, 0.3, 0.66, 6), basic(palette.inactive), 0, 0.33).name = 'lamp';
+  mesh(paper, cylinder(0.12, 0.17, 0.19, 6), basic(palette.core), 0, 0.33, 0.25).name = 'core';
+  mesh(paper, cylinder(0.075, 0.38, 0.24, 6), lambert(palette.wood), 0, 0.79);
+  const tear = new THREE.Shape();
+  tear.moveTo(-0.13, 0.17);
+  tear.lineTo(0.025, 0.06);
+  tear.lineTo(-0.002, -0.015);
+  tear.lineTo(0.17, -0.19);
+  tear.lineTo(-0.045, -0.064);
+  tear.lineTo(-0.018, 0.028);
+  tear.closePath();
+  const tears = new THREE.Group();
+  tears.name = 'tears';
+  paper.add(tears);
+  const tearGeometry = new THREE.ShapeGeometry(tear);
+  const tearMaterial = basic(palette.dark);
+  for (let side = 0; side < 6; side++) {
+    const angle = (side + 0.5) * Math.PI / 3;
+    const patch = mesh(tears, tearGeometry, tearMaterial, Math.sin(angle) * 0.257, 0.35, Math.cos(angle) * 0.257);
+    patch.rotation.y = angle;
+    patch.scale.x = 0.75;
+  }
+  const meter = new THREE.Group();
+  meter.name = 'fuel-meter';
+  meter.position.y = 3.36;
+  group.add(meter);
+  mesh(meter, new THREE.PlaneGeometry(1.25, 0.17), basic(palette.dark));
+  mesh(meter, new THREE.PlaneGeometry(1.16, 0.085), basic(palette.gold), 0, 0, 0.005).name = 'fuel-level';
   const rim = new THREE.RingGeometry(0.985, 1.0, 36);
   const ring = mesh(group, rim, new THREE.MeshBasicMaterial({
     color: palette.active, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false,
@@ -75,7 +104,11 @@ function createShade() {
   body.name = 'body';
   body.scale.y = 1.12;
   const eyeMaterial = basic(palette.violet);
-  mesh(group, sphere(0.11), eyeMaterial, -0.2, 0.13, 0.59);
+  const outlineMaterial = new THREE.MeshBasicMaterial({ color: palette.violet, side: THREE.BackSide });
+  const outline = mesh(group, sphere(0.705), outlineMaterial);
+  outline.name = 'outline';
+  outline.scale.y = 1.12;
+  mesh(group, sphere(0.11), eyeMaterial, -0.2, 0.13, 0.59).name = 'eye';
   mesh(group, sphere(0.11), eyeMaterial, 0.2, 0.13, 0.59);
   const tail = mesh(group, cylinder(0.44, 0.06, 0.62), lambert(0x211039), 0, -0.62);
   tail.rotation.x = 0.4;
@@ -293,9 +326,13 @@ export function createView(stage) {
   window.addEventListener('resize', resize);
   resize();
 
-  function draw(game, yaw, pitch, time, menu) {
+  function draw(game, yaw, pitch, time, menu, distinctColors) {
     const p = game.player;
-    const visibleTime = game.simTick / 60;
+    const visibleTime = game.simTick / HZ;
+    const angle = (menu ? -28 + Math.sin(time * 0.22) * 16 : yaw) * Math.PI / 180;
+    const distance = menu ? 25 : 8.8 * Math.cos(pitch);
+    camera.position.set(p.pos[0] - Math.sin(angle) * distance, p.pos[1] + (menu ? 16 : 2.7 + Math.sin(pitch) * 9), p.pos[2] - Math.cos(angle) * distance);
+    camera.lookAt(p.pos[0] + Math.sin(angle) * 4, p.pos[1] + 1.1, p.pos[2] + Math.cos(angle) * 4);
     place(player, p.pos);
     player.visible = !(p.invuln > game.simTick && Math.floor(visibleTime * 14) % 2);
     player.rotation.y = Math.atan2(p.facing[0], p.facing[1]);
@@ -305,13 +342,25 @@ export function createView(stage) {
     const floor = groundHeight(game.world, p.pos[0], p.pos[2], p.pos[1] + 0.01);
     shadow.visible = Number.isFinite(floor) && p.pos[1] >= floor;
     shadow.position.set(p.pos[0], shadow.visible ? floor + 0.025 : 0, p.pos[2]);
-    ambient.intensity = 0.15 + 0.55 * game.lanterns.filter(item => item.lit).length / game.lanterns.length;
+    ambient.intensity = 0.15 + 0.55 * game.litCount / game.lanterns.length;
     sync(lanterns, game.lanterns, createLantern, (node, item) => {
       place(node, item.pos);
-      node.getObjectByName('lamp').material.color.setHex(item.lit ? palette.active : palette.inactive);
-      node.getObjectByName('core').visible = item.lit;
+      const weak = game.isWeak(item);
+      const bright = item.lit && (!weak || game.simTick % HZ < HZ / 2);
+      node.getObjectByName('paper').scale.y = item.lit ? 1 : 0.8;
+      node.getObjectByName('lamp').material.color.setHex(bright ? palette.active : item.lit ? 0x98704b : palette.inactive);
+      node.getObjectByName('core').visible = bright;
+      node.getObjectByName('tears').visible = !item.lit;
+      const meter = node.getObjectByName('fuel-meter');
+      meter.visible = item.lit;
+      meter.quaternion.copy(camera.quaternion);
+      const level = meter.getObjectByName('fuel-level');
+      const ratio = item.fuelUnits / game.maxFuelUnits;
+      level.scale.x = ratio;
+      level.position.x = (ratio - 1) * 0.58;
+      level.material.color.setHex(bright ? palette.gold : 0x735c38);
       const ring = node.getObjectByName('safety');
-      ring.visible = item.lit;
+      ring.visible = game.isSafe(item);
       ring.scale.setScalar(game.tuning.safe_radius);
     });
     sync(motes, game.motes, createMote, (node, item, index) => {
@@ -324,6 +373,9 @@ export function createView(stage) {
       node.position.y += Math.sin(visibleTime * 5 + index) * 0.12;
       node.rotation.y = Math.atan2(p.pos[0] - item.pos[0], p.pos[2] - item.pos[2]);
       node.getObjectByName('body').material.color.setHex(item.state === 'stunned' ? palette.stunned : palette.dark);
+      const accent = distinctColors ? palette.accentBlue : palette.violet;
+      node.getObjectByName('eye').material.color.setHex(accent);
+      node.getObjectByName('outline').material.color.setHex(accent);
     });
     sync(drifters, game.drifters, createDrifter, (node, item, index) => {
       place(node, item.pos);
@@ -353,10 +405,6 @@ export function createView(stage) {
       pulse.scale.setScalar(elapsed * game.tuning.pulse_radius);
       pulse.material.opacity = Math.max(0, 0.85 * (1 - elapsed));
     }
-    const angle = (menu ? -28 + Math.sin(time * 0.22) * 16 : yaw) * Math.PI / 180;
-    const distance = menu ? 25 : 8.8 * Math.cos(pitch);
-    camera.position.set(p.pos[0] - Math.sin(angle) * distance, p.pos[1] + (menu ? 16 : 2.7 + Math.sin(pitch) * 9), p.pos[2] - Math.cos(angle) * distance);
-    camera.lookAt(p.pos[0] + Math.sin(angle) * 4, p.pos[1] + 1.1, p.pos[2] + Math.cos(angle) * 4);
     renderer.render(scene, camera);
   }
 
