@@ -61,6 +61,7 @@ try {
   await click('Vào đảo');
   await until("document.querySelector('#overlay').hidden && document.querySelector('#lantern-count').textContent === 'Đèn 0/5'");
   assert.equal(await evaluate("document.querySelector('#capacity').textContent"), '0/10');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dawn-target')).fontSize"), '18px');
   await press('KeyW', 450);
   await press('Space', 90);
   if (process.env.GAME_CHECK_SCREENSHOT) await screenshot(process.env.GAME_CHECK_SCREENSHOT);
@@ -92,10 +93,18 @@ try {
       const slider = document.querySelector('input[type=range]');
       slider.value = '0.42';
       slider.dispatchEvent(new Event('input', { bubbles: true }));
-      const palette = document.querySelector('input[type=checkbox]');
-      palette.checked = true;
-      palette.dispatchEvent(new Event('change', { bubbles: true }));
+      for (const name of ['distinctColors', 'reducedMotion', 'largeText']) {
+        const checkbox = document.querySelector('input[name=' + name + ']');
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     })()`);
+    await evaluate("document.querySelector('[data-action=jump]').click()");
+    await press('KeyE');
+    assert.match(await evaluate("document.querySelector('.key-status').textContent"), /đã dùng/);
+    await press('KeyJ');
+    assert.equal(await evaluate("document.querySelector('[data-action=jump]').textContent"), 'J');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#dawn-target')).fontSize"), '22.5px');
     await click('Quay lại');
     assert.equal(await evaluate("document.querySelector('#clock').textContent"), previousClock);
     await click('Tiếp tục');
@@ -108,7 +117,10 @@ try {
     await until("Boolean(document.querySelector('#stage canvas'))");
     await click('Cài đặt');
     assert.equal(await evaluate("document.querySelector('input[type=range]').value"), '0.42');
-    assert.equal(await evaluate("document.querySelector('input[type=checkbox]').checked"), true);
+    assert.equal(await evaluate("document.querySelectorAll('input:checked').length"), 3);
+    assert.equal(await evaluate("document.querySelector('[data-action=jump]').textContent"), 'J');
+    await click('Khôi phục mặc định');
+    assert.equal(await evaluate("document.querySelector('[data-action=jump]').textContent"), 'Space');
   }
   await click('Quay lại');
   await click('Bắt đầu');
@@ -129,7 +141,16 @@ try {
         this.player.carried = 5;
         this.player.successfulLights = 1;
         this.addShade({ pos: [0.75, 0.8, 5], state: 'stunned', state_ticks_left: 180 });
-        this.startTime = this.simTick / HZ + 25;
+        this.simTick = 299;
+        this.startTime = this.simTick / HZ + 9;
+      }
+      if (window.testWindView) {
+        window.testWindView = false;
+        this.simTick = 1679;
+      }
+      if (window.testLoseNight) {
+        window.testLoseNight = false;
+        this.player.flames = 0;
       }
       if (window.testWinNight === this.night) {
         window.testWinNight = null;
@@ -147,6 +168,9 @@ try {
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#clock')).color"), 'rgb(255, 255, 255)');
   assert.match(await evaluate("getComputedStyle(document.querySelector('#clock'), '::before').content"), /⚠/);
   assert.match(await evaluate("document.querySelector('#prompt').textContent"), /Châm dầu/);
+  await until("!document.querySelector('#shade-waypoint').hidden && !document.querySelector('#spawn-notice').hidden");
+  assert.equal(await evaluate("document.querySelector('#low-fuel-notice').hidden || document.querySelector('#countdown-notice').hidden"), false);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#hit-flash')).display"), 'none');
   if (process.env.GAME_CHECK_FUEL_SCREENSHOT) await screenshot(process.env.GAME_CHECK_FUEL_SCREENSHOT);
   await press('KeyE');
   await until("document.querySelector('#capacity').textContent === '0/12'");
@@ -164,11 +188,31 @@ try {
   await until("document.querySelector('#lantern-count').textContent === 'Đèn 0/7'");
   if (process.env.GAME_CHECK_SCREENSHOT) await screenshot(process.env.GAME_CHECK_SCREENSHOT.replace(/\.jpg$/, '-night3.jpg'));
   nights.push(await measure());
+  await evaluate('window.testWindView = true');
+  await until("!document.querySelector('#wind-notice').hidden && document.querySelector('#wind-notice').textContent === 'Gió mạnh sắp đến'");
   await evaluate('window.testWinNight = 3');
   await until("document.querySelector('#screen-title').textContent === 'Bình Minh'");
   assert.match(await evaluate("document.querySelector('#screen-copy').textContent"), /Tổng điểm: [1-9]/);
+  await evaluate("document.querySelector('input[name=player-name]').value = 'Lab_May'");
+  await click('Lưu điểm');
+  await until("document.querySelector('.score-form [role=status]').textContent === 'Đã lưu điểm.'");
+  await click('Về menu');
+  await click('Bắt đầu');
+  await click('Vào đảo');
+  await evaluate('window.testLoseNight = true');
+  await until("document.querySelector('#screen-title').textContent === 'Mây đã hết Ngọn Lửa'");
+  await evaluate("document.querySelector('input[name=player-name]').value = 'Lab_Thu'");
+  await click('Lưu điểm');
+  await until("document.querySelector('.score-form [role=status]').textContent === 'Đã lưu điểm.'");
+  await click('Về menu');
+  await send('Page.reload');
+  await until("Boolean(document.querySelector('#stage canvas'))");
+  await click('Bảng xếp hạng');
+  await until("document.querySelector('.leaderboard tbody')?.textContent.includes('Lab_May')");
+  assert.match(await evaluate("document.querySelector('.leaderboard tbody').textContent"), /Lab_May.*Lab_Thu/);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ gpu, nights, settingsPersisted: true, refuelHud: true, errors: errors.length }));
+  console.log(JSON.stringify({ gpu, nights, settingsPersisted: true, refuelHud: true,
+    keyboardConflicts: true, captions: true, leaderboardPersisted: true, errors: errors.length }));
 } finally {
   socket.close();
 }

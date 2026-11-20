@@ -215,6 +215,12 @@ export class Game {
     return this.events;
   }
 
+  stepBenchmark() {
+    this.simTick++;
+    this.updateSafeZones();
+    this.updateShades(false);
+  }
+
   togglePause() {
     const paused = this.state === 'playing';
     this.state = paused ? 'paused' : 'playing';
@@ -233,6 +239,7 @@ export class Game {
   }
 
   updateFuel() {
+    if (!this.lanterns.some(lantern => lantern.lit)) return;
     const drains = new Map();
     const reports = [];
     for (const shade of this.shades) {
@@ -537,7 +544,7 @@ export class Game {
     return !protectedBy;
   }
 
-  updateShades() {
+  updateShades(canChase = this.player.respawnAt === null) {
     for (const shade of this.shades) {
       const leftDrain = shade.state === 'drain' && !this.drainTarget(shade);
       if (leftDrain) this.stopDraining(shade);
@@ -565,7 +572,7 @@ export class Game {
       const distance = horizontalDistance(shade.pos, this.player.pos);
       const speed = this.world.shadeSpeed ?? this.tuning.shade_speed;
       const detectionRadius = shade.state === 'drain' ? DRAIN_DETECT_RADIUS : shade.state === 'chase' ? 18 : 12;
-      if (this.player.respawnAt === null && distance <= detectionRadius + EPSILON) {
+      if (canChase && distance <= detectionRadius + EPSILON) {
         if (shade.state === 'drain') this.stopDraining(shade);
         shade.state = 'chase';
         const [dx, dz] = direction(x - shade.pos[0], z - shade.pos[2]);

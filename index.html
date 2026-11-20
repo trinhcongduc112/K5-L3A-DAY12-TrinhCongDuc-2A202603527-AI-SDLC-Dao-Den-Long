@@ -8,6 +8,7 @@
 </head>
 <body>
   <div id="stage"></div>
+  <div id="hit-flash" aria-hidden="true" hidden></div>
   <div id="hud" class="hud" hidden>
     <div id="flames" class="glass flames" aria-label="Ngọn Lửa"></div>
     <div id="clock" class="glass clock" aria-label="Thời gian còn lại"></div>
@@ -15,11 +16,17 @@
     <div id="prompt" class="glass prompt" hidden></div>
     <div id="motes" class="glass motes" aria-label="Đom đóm đang mang"><span id="capacity"></span></div>
     <div id="actions" class="glass actions">
-      <div><kbd>Shift</kbd> Lướt <span id="dash-status"></span></div>
-      <div><kbd>Q</kbd> Tỏa sáng <span id="pulse-status"></span></div>
+      <div><kbd id="dash-key">Shift</kbd> Lướt <span id="dash-status"></span></div>
+      <div><kbd id="pulse-key">Q</kbd> Tỏa sáng <span id="pulse-status"></span></div>
     </div>
     <div id="waypoint" class="waypoint" aria-hidden="true" hidden>▲</div>
-    <div id="wind-notice" class="glass wind-notice" hidden>Gió mạnh sắp đến</div>
+    <div id="shade-waypoint" class="waypoint shade-waypoint" aria-hidden="true" hidden>▲</div>
+    <div id="notices" class="notices" aria-live="polite" hidden>
+      <div id="spawn-notice" class="notice" hidden></div>
+      <div id="wind-notice" class="notice" hidden></div>
+      <div id="countdown-notice" class="notice" hidden></div>
+      <div id="low-fuel-notice" class="notice" hidden></div>
+    </div>
   </div>
   <section id="overlay" class="overlay" aria-labelledby="screen-title">
     <div class="panel">

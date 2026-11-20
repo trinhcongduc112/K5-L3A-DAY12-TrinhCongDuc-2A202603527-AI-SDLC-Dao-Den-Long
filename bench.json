@@ -1,0 +1,12 @@
+{
+  "contract_version": "1.3",
+  "avg_fps": 836.503,
+  "p1_low_fps": 344.875,
+  "frame_ms_p95": 1.8,
+  "frames": 25094,
+  "load_ms": 1376,
+  "renderer": "Google Chrome 154.0.8037.57 / Three.js r182 / ANGLE (Intel, Mesa Intel(R) Iris(R) Xe Graphics (ADL GT2), OpenGL 4.6)",
+  "peak_mem_mb": null,
+  "vsync_off": true,
+  "os": "linux 7.0.0-43-generic x64"
+}

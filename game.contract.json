@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603527-TrinhCongDuc",
-  "build_cmd": "npm ci",
-  "run_cmd": "npm run dev",
+  "build_cmd": "npm ci && npm run build",
+  "run_cmd": "node scripts/run-game.js",
   "headless_cmd": "node src/headless.js",
+  "bench_cmd": "node scripts/bench.js",
+  "soak_cmd": "node --expose-gc --max-semi-space-size=1 scripts/soak.js",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 10,

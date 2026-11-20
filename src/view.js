@@ -109,7 +109,7 @@ function createShade() {
   outline.name = 'outline';
   outline.scale.y = 1.12;
   mesh(group, sphere(0.11), eyeMaterial, -0.2, 0.13, 0.59).name = 'eye';
-  mesh(group, sphere(0.11), eyeMaterial, 0.2, 0.13, 0.59);
+  mesh(group, sphere(0.11), eyeMaterial, 0.2, 0.13, 0.59).name = 'eye';
   const tail = mesh(group, cylinder(0.44, 0.06, 0.62), lambert(0x211039), 0, -0.62);
   tail.rotation.x = 0.4;
   return group;
@@ -149,6 +149,7 @@ function disposeTree(group) {
   const geometries = new Set();
   const materials = new Set();
   group.traverse(item => {
+    if (item.isInstancedMesh) item.dispose();
     if (item.geometry && item.geometry !== moteGeometry && item.geometry !== haloGeometry) geometries.add(item.geometry);
     if (item.material && item.material !== moteMaterial && item.material !== haloMaterial) materials.add(item.material);
   });
@@ -156,7 +157,52 @@ function disposeTree(group) {
   for (const material of materials) material.dispose();
 }
 
-export function createView(stage) {
+function instanceLayer(scene, template, coloredParts = []) {
+  const group = new THREE.Group();
+  const pivot = new THREE.Object3D();
+  const matrix = new THREE.Matrix4();
+  const color = new THREE.Color();
+  let capacity = 0;
+  const parts = template.children.map(part => {
+    part.updateMatrix();
+    const colored = coloredParts.includes(part.name);
+    if (colored) part.material.color.setHex(0xffffff);
+    return { part, colored, mesh: null };
+  });
+  scene.add(group);
+  return (list, move, tint) => {
+    if (!list.length && !capacity) return;
+    if (list.length > capacity) {
+      capacity = Math.max(16, 2 ** Math.ceil(Math.log2(list.length)));
+      group.clear();
+      for (const entry of parts) {
+        const { part } = entry;
+        entry.mesh?.dispose();
+        entry.mesh = new THREE.InstancedMesh(part.geometry, part.material, capacity);
+        entry.mesh.frustumCulled = false;
+        entry.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        group.add(entry.mesh);
+      }
+    }
+    for (let index = 0; index < list.length; index++) {
+      const item = list[index];
+      move(pivot, item, index);
+      pivot.updateMatrix();
+      for (const entry of parts) {
+        matrix.multiplyMatrices(pivot.matrix, entry.part.matrix);
+        entry.mesh.setMatrixAt(index, matrix);
+        if (entry.colored) entry.mesh.setColorAt(index, color.setHex(tint(item, entry.part.name)));
+      }
+    }
+    for (const entry of parts) {
+      entry.mesh.count = list.length;
+      entry.mesh.instanceMatrix.needsUpdate = true;
+      if (entry.mesh.instanceColor) entry.mesh.instanceColor.needsUpdate = true;
+    }
+  };
+}
+
+export function createView(stage, { decorations = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1);
   renderer.domElement.tabIndex = -1;
@@ -180,33 +226,36 @@ export function createView(stage) {
   pulse.rotation.x = -Math.PI / 2;
   pulse.visible = false;
   let pulseTime = -Infinity;
+  let hitTime = -Infinity;
 
   const sky = new THREE.Group();
-  const random = seededRandom(403);
-  const stars = Array.from({ length: 800 }, () => {
-    const angle = random() * Math.PI * 2;
-    const radius = 225 + random() * 90;
-    return [Math.cos(angle) * radius, 10 + random() * 155, Math.sin(angle) * radius];
-  }).flat();
-  const starField = new THREE.BufferGeometry();
-  starField.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
-  sky.add(new THREE.Points(starField, new THREE.PointsMaterial({ color: 0xe9e3cf, size: 0.65, fog: false })));
-  mesh(sky, sphere(7, 24, 16), new THREE.MeshBasicMaterial({ color: palette.core, fog: false }), -145, 81, 170);
   const sea = mesh(sky, new THREE.PlaneGeometry(1200, 1200), basic(palette.clouds), 0, -15);
   sea.rotation.x = -Math.PI / 2;
-  const cloudMaterial = basic(0x294a65);
-  const cloudGeometry = sphere(1, 9, 6);
-  for (let index = 0; index < 18; index++) {
-    const cloud = mesh(sky, cloudGeometry, cloudMaterial, (random() - 0.5) * 220, -12 + random() * 3, (random() - 0.5) * 210);
-    cloud.scale.set(7 + random() * 13, 1 + random() * 2, 3 + random() * 5);
+  if (decorations) {
+    const random = seededRandom(403);
+    const stars = Array.from({ length: 800 }, () => {
+      const angle = random() * Math.PI * 2;
+      const radius = 225 + random() * 90;
+      return [Math.cos(angle) * radius, 10 + random() * 155, Math.sin(angle) * radius];
+    }).flat();
+    const starField = new THREE.BufferGeometry();
+    starField.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
+    sky.add(new THREE.Points(starField, new THREE.PointsMaterial({ color: 0xe9e3cf, size: 0.65, fog: false })));
+    mesh(sky, sphere(7, 24, 16), new THREE.MeshBasicMaterial({ color: palette.core, fog: false }), -145, 81, 170);
+    const cloudMaterial = basic(0x294a65);
+    const cloudGeometry = sphere(1, 9, 6);
+    for (let index = 0; index < 18; index++) {
+      const cloud = mesh(sky, cloudGeometry, cloudMaterial, (random() - 0.5) * 220, -12 + random() * 3, (random() - 0.5) * 210);
+      cloud.scale.set(7 + random() * 13, 1 + random() * 2, 3 + random() * 5);
+    }
   }
   scene.add(sky);
 
   let map = new THREE.Group();
   scene.add(map);
   const lanterns = new Map();
-  const motes = new Map();
-  const shades = new Map();
+  const drawMotes = instanceLayer(scene, createMote());
+  const drawShades = instanceLayer(scene, createShade(), ['body', 'eye', 'outline']);
   const drifters = new Map();
   const charms = new Map();
   const leafField = new THREE.BufferGeometry();
@@ -240,7 +289,7 @@ export function createView(stage) {
     scene.remove(map);
     map = new THREE.Group();
     scene.add(map);
-    for (const nodes of [lanterns, motes, shades, drifters, charms]) nodes.clear();
+    for (const nodes of [lanterns, drifters, charms]) nodes.clear();
     const grass = lambert(palette.grass);
     const bank = lambert(0x253f4c);
     const sand = lambert(palette.sand);
@@ -287,6 +336,13 @@ export function createView(stage) {
         window.rotation.y = angle;
       }
     }
+    if (decorations) addTrees(game, wood);
+    pulse.visible = false;
+    pulseTime = -Infinity;
+    hitTime = -Infinity;
+  }
+
+  function addTrees(game, wood) {
     const trees = seededRandom(20 + game.night);
     const trunk = cylinder(0.11, 0.24, 2.2, 6);
     const leaves = cylinder(0, 1.25, 3.05, 7);
@@ -314,8 +370,6 @@ export function createView(stage) {
       });
       map.add(instanced);
     }
-    pulse.visible = false;
-    pulseTime = -Infinity;
   }
 
   function resize() {
@@ -326,13 +380,22 @@ export function createView(stage) {
   window.addEventListener('resize', resize);
   resize();
 
-  function draw(game, yaw, pitch, time, menu, distinctColors) {
+  function draw(game, yaw, pitch, time, menu, distinctColors, { orbitTime, reducedMotion = false } = {}) {
     const p = game.player;
     const visibleTime = game.simTick / HZ;
-    const angle = (menu ? -28 + Math.sin(time * 0.22) * 16 : yaw) * Math.PI / 180;
-    const distance = menu ? 25 : 8.8 * Math.cos(pitch);
-    camera.position.set(p.pos[0] - Math.sin(angle) * distance, p.pos[1] + (menu ? 16 : 2.7 + Math.sin(pitch) * 9), p.pos[2] - Math.cos(angle) * distance);
-    camera.lookAt(p.pos[0] + Math.sin(angle) * 4, p.pos[1] + 1.1, p.pos[2] + Math.cos(angle) * 4);
+    if (orbitTime !== undefined) {
+      const angle = orbitTime * 2 * Math.PI / 15;
+      camera.position.set(30 * Math.cos(angle), 15, 30 * Math.sin(angle));
+      camera.lookAt(0, 0, 0);
+    } else {
+      const angle = (menu ? -28 + (reducedMotion ? 0 : Math.sin(time * 0.22) * 16) : yaw) * Math.PI / 180;
+      const distance = menu ? 25 : 8.8 * Math.cos(pitch);
+      const hitElapsed = visibleTime - hitTime;
+      const shake = !reducedMotion && hitElapsed < 0.22 ? Math.sin(hitElapsed * 80) * 0.16 * (1 - hitElapsed / 0.22) : 0;
+      camera.position.set(p.pos[0] - Math.sin(angle) * distance + shake,
+        p.pos[1] + (menu ? 16 : 2.7 + Math.sin(pitch) * 9), p.pos[2] - Math.cos(angle) * distance);
+      camera.lookAt(p.pos[0] + Math.sin(angle) * 4, p.pos[1] + 1.1, p.pos[2] + Math.cos(angle) * 4);
+    }
     place(player, p.pos);
     player.visible = !(p.invuln > game.simTick && Math.floor(visibleTime * 14) % 2);
     player.rotation.y = Math.atan2(p.facing[0], p.facing[1]);
@@ -363,20 +426,17 @@ export function createView(stage) {
       ring.visible = game.isSafe(item);
       ring.scale.setScalar(game.tuning.safe_radius);
     });
-    sync(motes, game.motes, createMote, (node, item, index) => {
+    drawMotes(game.motes, (node, item, index) => {
       place(node, item.pos);
       node.position.y += 0.65 + Math.sin(visibleTime * 4 + index * 0.71) * 0.22;
       node.rotation.y = visibleTime * 1.35 + index;
     });
-    sync(shades, game.shades, createShade, (node, item, index) => {
+    drawShades(game.shades, (node, item, index) => {
       place(node, item.pos);
       node.position.y += Math.sin(visibleTime * 5 + index) * 0.12;
       node.rotation.y = Math.atan2(p.pos[0] - item.pos[0], p.pos[2] - item.pos[2]);
-      node.getObjectByName('body').material.color.setHex(item.state === 'stunned' ? palette.stunned : palette.dark);
-      const accent = distinctColors ? palette.accentBlue : palette.violet;
-      node.getObjectByName('eye').material.color.setHex(accent);
-      node.getObjectByName('outline').material.color.setHex(accent);
-    });
+    }, (item, part) => part === 'body' ? (item.state === 'stunned' ? palette.stunned : palette.dark)
+      : distinctColors ? palette.accentBlue : palette.violet);
     sync(drifters, game.drifters, createDrifter, (node, item, index) => {
       place(node, item.pos);
       node.position.y += Math.sin(visibleTime * 5 + index) * 0.2;
@@ -399,7 +459,7 @@ export function createView(stage) {
       }
       leafField.attributes.position.needsUpdate = true;
     }
-    pulse.visible = visibleTime - pulseTime < 0.44;
+    pulse.visible = !reducedMotion && visibleTime - pulseTime < 0.44;
     if (pulse.visible) {
       const elapsed = Math.max(0.05, (visibleTime - pulseTime) / 0.44);
       pulse.scale.setScalar(elapsed * game.tuning.pulse_radius);
@@ -420,6 +480,9 @@ export function createView(stage) {
     flash(game) {
       pulseTime = game.simTick / 60;
       pulse.position.set(game.player.pos[0], game.player.pos[1] + 0.08, game.player.pos[2]);
+    },
+    hit(game) {
+      hitTime = game.simTick / HZ;
     },
   };
 }

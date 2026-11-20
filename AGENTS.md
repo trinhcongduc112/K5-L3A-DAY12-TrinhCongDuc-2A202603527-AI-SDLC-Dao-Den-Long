@@ -17,3 +17,9 @@
 
 - Lưu dầu theo đơn vị nguyên 1/60 và chỉ làm tròn tại đầu ra. Bước trừ dầu và tắt đèn chạy trước tương tác. Giữ phép kiểm tra bình minh ở cuối tick.
 - Khi thay đổi đèn, chạy scenario ở `docs/proof/phase-3.md`. So lại ngưỡng 30, điểm bình minh, thứ tự thắng/thua và màu cảnh báo sau khi reload.
+
+## Từ Phase 4
+
+- Chạy `npm test`, `npm run build` và các lệnh trong `docs/proof/phase-4.md`. Dùng thư mục dữ liệu thử qua `DAO_DEN_LONG_DATA_DIR` khi kiểm thử xếp hạng.
+- Benchmark dùng renderer chung. Giữ scene chuẩn, cửa sổ 1280×720 và cửa sổ đo tách khỏi warm-up. Đừng lưu số từ lần đo thử ngắn vào `bench.json`.
+- `scripts/package-release.py` đóng gói bản đã build. Workflow chỉ tạo bản bàn giao khi push tag phát hành `v1.0.0`.

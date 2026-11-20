@@ -1,15 +1,24 @@
 {
   "name": "dao-den-long",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "node --test",
-    "headless": "node src/headless.js"
+    "headless": "node src/headless.js",
+    "start": "node scripts/run-game.js",
+    "bench": "node scripts/bench.js",
+    "soak": "node --expose-gc --max-semi-space-size=1 scripts/soak.js"
   },
-  "dependencies": { "three": "0.182.0" },
-  "devDependencies": { "vite": "6.4.1" }
+  "dependencies": {
+    "three": "0.182.0"
+  },
+  "devDependencies": {
+    "vite": "6.4.1"
+  }
 }
