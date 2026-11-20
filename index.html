@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e1430">
+  <title>Đảo Đèn Lồng</title>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="hud" class="hud" hidden>
+    <div id="flames" class="glass flames" aria-label="Ngọn Lửa"></div>
+    <div id="clock" class="glass clock" aria-label="Thời gian còn lại"></div>
+    <div class="glass score"><span id="lantern-count"></span><span id="points"></span></div>
+    <div id="prompt" class="glass prompt" hidden></div>
+    <div id="motes" class="glass motes" aria-label="Đom đóm đang mang"></div>
+    <div id="actions" class="glass actions"><kbd>Q</kbd> Tỏa sáng</div>
+    <div id="waypoint" class="waypoint" aria-hidden="true" hidden>▲</div>
+    <div id="wind-notice" class="glass wind-notice" hidden>Gió mạnh sắp đến</div>
+  </div>
+  <section id="overlay" class="overlay" aria-labelledby="screen-title">
+    <div class="panel">
+      <p id="screen-kicker" class="kicker">ĐÊM 1 <span>✧</span> ĐẢO BẾN</p>
+      <h1 id="screen-title">Đảo Đèn Lồng</h1>
+      <p id="screen-copy">Cùng Mây nhặt đom đóm và thắp lại năm chiếc đèn trên đảo.</p>
+      <div id="screen-buttons" class="buttons"><button id="start" type="button">Bắt đầu</button></div>
+      <p id="controls" class="controls"><kbd>WASD</kbd> Di chuyển · <kbd>Space</kbd> Nhảy · <kbd>E</kbd> Nạp · <kbd>Q</kbd> Tỏa sáng</p>
+    </div>
+  </section>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
