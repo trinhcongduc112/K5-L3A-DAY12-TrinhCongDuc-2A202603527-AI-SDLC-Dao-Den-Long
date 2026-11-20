@@ -1,0 +1,8 @@
+{
+  "player": { "carried": 10 },
+  "random_motes": false,
+  "random_shades": false,
+  "random_drifters": false,
+  "charms": [{ "id": "C1", "pos": [0, 0, 0] }],
+  "drifters": [{ "id": "D1", "pos": [0, 1.2, 0.5] }]
+}

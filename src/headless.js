@@ -1,5 +1,5 @@
 import { closeSync, openSync, readFileSync, writeFileSync } from 'node:fs';
-import { blankInput, buttons, Game } from './game.js';
+import { blankInput, buttons, drifterStates, Game, shadeStates } from './game.js';
 import { worlds } from './world.js';
 
 const contract = JSON.parse(readFileSync(new URL('../game.contract.json', import.meta.url), 'utf8'));
@@ -69,12 +69,24 @@ function validateScenario(data, night) {
     time_left_s: value => number(value) && value >= 0,
     random_motes: isBoolean,
     random_shades: isBoolean,
+    random_drifters: isBoolean,
+    wind_enabled: isBoolean,
     motes: value => Array.isArray(value) && value.every(pos),
   }, 'scenario');
-  if ('player' in data) validateFields(data.player, { pos, carried: value => integer(value), flames: value => integer(value) }, 'player');
+  if ('player' in data) validateFields(data.player, {
+    pos, carried: value => integer(value), flames: value => integer(value),
+    invuln_ticks: integer, dash_cd_ticks: integer, pulse_cd_ticks: integer, charm_ticks: integer,
+  }, 'player');
   records(data.shades, 'shades', (item, label) => {
-    validateFields(item, { pos, id }, label);
+    validateFields(item, { pos, id, state: value => shadeStates.includes(value), state_ticks_left: integer }, label);
     requireValue(pos(item.pos), label + '.pos is required');
+  });
+  records(data.drifters, 'drifters', (item, label) => {
+    validateFields(item, { pos, id, state: value => drifterStates.includes(value), stolen: integer, state_ticks_left: integer }, label);
+    requireValue(pos(item.pos), label + '.pos is required');
+  });
+  records(data.charms, 'charms', (item, label) => {
+    validateFields(item, { pos, id, available: isBoolean, respawn_ticks: integer, respawn_ticks_left: integer }, label);
   });
   records(data.lanterns, 'lanterns', (item, label) => {
     validateFields(item, { pos, lit: isBoolean, deposited: value => integer(value) }, label);
@@ -101,7 +113,7 @@ function parseArguments(values) {
   const interval = Number(args['snapshot-every'] ?? 10);
   if (!Number.isSafeInteger(seed) || !integer(night, 1) || !worlds[night] ||
       !integer(count) || !integer(interval, 1) || !args.out) {
-    throw new Error('Usage: node src/headless.js --seed INT --night 1 [--scenario FILE] [--inputs FILE] --ticks N --out FILE [--snapshot-every N]');
+    throw new Error('Usage: node src/headless.js --seed INT --night 1|2|3 [--scenario FILE] [--inputs FILE] --ticks N --out FILE [--snapshot-every N]');
   }
   return { args, seed, night, count, interval };
 }

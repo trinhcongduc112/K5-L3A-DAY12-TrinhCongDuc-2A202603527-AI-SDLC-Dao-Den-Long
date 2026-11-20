@@ -14,7 +14,10 @@
     <div class="glass score"><span id="lantern-count"></span><span id="points"></span></div>
     <div id="prompt" class="glass prompt" hidden></div>
     <div id="motes" class="glass motes" aria-label="Đom đóm đang mang"></div>
-    <div id="actions" class="glass actions"><kbd>Q</kbd> Tỏa sáng</div>
+    <div id="actions" class="glass actions">
+      <div><kbd>Shift</kbd> Lướt <span id="dash-status"></span></div>
+      <div><kbd>Q</kbd> Tỏa sáng <span id="pulse-status"></span></div>
+    </div>
     <div id="waypoint" class="waypoint" aria-hidden="true" hidden>▲</div>
     <div id="wind-notice" class="glass wind-notice" hidden>Gió mạnh sắp đến</div>
   </div>
@@ -24,7 +27,7 @@
       <h1 id="screen-title">Đảo Đèn Lồng</h1>
       <p id="screen-copy">Cùng Mây nhặt đom đóm và thắp lại năm chiếc đèn trên đảo.</p>
       <div id="screen-buttons" class="buttons"><button id="start" type="button">Bắt đầu</button></div>
-      <p id="controls" class="controls"><kbd>WASD</kbd> Di chuyển · <kbd>Space</kbd> Nhảy · <kbd>E</kbd> Nạp · <kbd>Q</kbd> Tỏa sáng</p>
+      <p id="controls" class="controls"><kbd>WASD</kbd> Di chuyển · <kbd>Space</kbd> Nhảy · <kbd>E</kbd> Nạp · <kbd>Q</kbd> Tỏa sáng · <kbd>Shift</kbd> Lướt · <kbd>Esc</kbd> Tạm dừng</p>
     </div>
   </section>
   <script type="module" src="/src/main.js"></script>

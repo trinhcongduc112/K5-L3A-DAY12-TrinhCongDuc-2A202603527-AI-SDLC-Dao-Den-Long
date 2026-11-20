@@ -1,0 +1,9 @@
+{
+  "frames": [
+    { "tick": 1, "pulse": true },
+    { "tick": 2, "pulse": false, "pause": true },
+    { "tick": 3, "pause": false },
+    { "tick": 8, "pause": true },
+    { "tick": 9, "pause": false, "dash": true }
+  ]
+}
